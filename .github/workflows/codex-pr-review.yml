@@ -1,0 +1,85 @@
+name: Codex PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: codex-pr-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Codex review agent
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    outputs:
+      final_message: ${{ steps.run_codex.outputs.final-message }}
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout pull request merge commit
+        uses: actions/checkout@v5
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Pre-fetch base and head refs
+        env:
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --no-tags origin \
+            "$PR_BASE_REF" \
+            "+refs/pull/$PR_NUMBER/head"
+
+      - name: Warn when OpenAI API key is missing
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        run: |
+          echo "::warning title=OPENAI_API_KEY not configured::Codex PR review requires an OPENAI_API_KEY repository or organization secret."
+
+      - name: Run Codex PR review
+        id: run_codex
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ env.OPENAI_API_KEY }}
+          prompt-file: .github/codex/prompts/pr-review.md
+          sandbox: read-only
+          safety-strategy: drop-sudo
+          output-file: codex-pr-review.md
+
+      - name: Upload Codex review artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-pr-review-${{ github.event.pull_request.number }}
+          path: codex-pr-review.md
+          if-no-files-found: ignore
+
+  post-review:
+    name: Post Codex feedback
+    needs: review
+    if: ${{ needs.review.outputs.final_message != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Comment on pull request
+        uses: actions/github-script@v7
+        env:
+          CODEX_FINAL_MESSAGE: ${{ needs.review.outputs.final_message }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `## Codex automated review\n\n${process.env.CODEX_FINAL_MESSAGE}`,
+            });
