@@ -1,0 +1,22 @@
+# INFRA — Railway service config for the studio-suite web app (Vite/React).
+# Reviewed as infrastructure, not application code.
+#
+# Vite is a devDependency, so the build MUST install dev deps; a bare production
+# install fails with "vite: not found". The built static bundle is served by
+# `serve` from the build/ output directory.
+
+[build]
+builder = "RAILPACK"
+buildEnvironment = "V3"
+buildCommand = "npm ci --include=dev && npm run build"
+
+[deploy]
+runtime = "V2"
+numReplicas = 1
+startCommand = "npx --yes serve@14.2.6 -s build -l tcp://0.0.0.0:$PORT"
+preDeployCommand = "rm -rf node_modules/.vite"
+sleepApplication = false
+useLegacyStacker = false
+ipv6EgressEnabled = false
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
