@@ -8,9 +8,9 @@
 # default). The built static bundle (web/build) is served by `serve`.
 #
 # ⚠ OWNER ACTION: the Railway web service Root Directory must be set to the repo
-# ROOT (not web/) for this buildCommand to resolve the workspace. Because the
-# build then runs from root while the served output is web/build, confirm the
-# deploy CWD / start path with the owner (see the task report's infra section).
+# ROOT (not web/) for this buildCommand to resolve the workspace. The deploy CWD is
+# then the repo root, so the start command serves the artifact at `web/build`
+# (NOT `./build`, which would not exist at the root).
 
 [build]
 builder = "RAILPACK"
@@ -20,7 +20,7 @@ buildCommand = "pnpm install --frozen-lockfile && pnpm -F @is/tokens build && pn
 [deploy]
 runtime = "V2"
 numReplicas = 1
-startCommand = "npx --yes serve@14.2.6 -s build -l tcp://0.0.0.0:$PORT"
+startCommand = "npx --yes serve@14.2.6 -s web/build -l tcp://0.0.0.0:$PORT"
 preDeployCommand = "rm -rf node_modules/.vite"
 sleepApplication = false
 useLegacyStacker = false

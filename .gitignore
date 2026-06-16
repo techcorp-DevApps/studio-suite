@@ -3,6 +3,7 @@
 # Local orchestration + workflow scratch (never committed)
 .orchestrator/
 .automate-dev/
+.claude/
 
 # Environment files (never commit secrets) — keep the .env.example templates
 .env
