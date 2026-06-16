@@ -8,7 +8,7 @@
 [build]
 builder = "RAILPACK"
 buildEnvironment = "V3"
-buildCommand = "npm ci --include=dev && npm run build"
+buildCommand = "npm run build"
 
 [deploy]
 runtime = "V2"
