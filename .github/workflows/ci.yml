@@ -49,24 +49,28 @@ jobs:
   web:
     name: web (eslint + build)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
+    # Runs from the repo ROOT: this is now a pnpm workspace, so the install must
+    # resolve all members (packages/* + web) from the root lockfile.
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache: pnpm
 
-      - name: Install dependencies (with dev deps — Vite is a devDependency)
-        run: npm ci --include=dev
+      - name: Install dependencies (workspace, frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build tokens (@is/tokens — must precede the web build, which imports it)
+        run: pnpm -F @is/tokens build
+
+      - name: Build web (vite)
+        run: pnpm -F studio-suite-web build
 
       - name: Lint (eslint)
-        run: npm run lint
-
-      - name: Build (vite)
-        run: npm run build
+        run: pnpm -F studio-suite-web lint

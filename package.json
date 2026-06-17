@@ -1,0 +1,11 @@
+{
+  "name": "studio-suite",
+  "private": true,
+  "packageManager": "pnpm@10.34.3",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build:tokens": "pnpm -F @is/tokens build"
+  }
+}

@@ -1,19 +1,26 @@
 # INFRA — Railway service config for the studio-suite web app (Vite/React).
 # Reviewed as infrastructure, not application code.
 #
-# Vite is a devDependency, so the build MUST install dev deps; a bare production
-# install fails with "vite: not found". The built static bundle is served by
-# `serve` from the build/ output directory.
+# This repo is now a pnpm workspace. The build MUST run from the repo ROOT so the
+# workspace installs all members (packages/* + web) and the web app can consume the
+# COMPILED @is/tokens package — hence @is/tokens is built before the web app.
+# Vite is a devDependency, so the install includes dev deps (pnpm install does by
+# default). The built static bundle (web/build) is served by `serve`.
+#
+# ⚠ OWNER ACTION: the Railway web service Root Directory must be set to the repo
+# ROOT (not web/) for this buildCommand to resolve the workspace. The deploy CWD is
+# then the repo root, so the start command serves the artifact at `web/build`
+# (NOT `./build`, which would not exist at the root).
 
 [build]
 builder = "RAILPACK"
 buildEnvironment = "V3"
-buildCommand = "npm run build"
+buildCommand = "pnpm install --frozen-lockfile && pnpm -F @is/tokens build && pnpm -F studio-suite-web build"
 
 [deploy]
 runtime = "V2"
 numReplicas = 1
-startCommand = "npx --yes serve@14.2.6 -s build -l tcp://0.0.0.0:$PORT"
+startCommand = "npx --yes serve@14.2.6 -s web/build -l tcp://0.0.0.0:$PORT"
 preDeployCommand = "rm -rf node_modules/.vite"
 sleepApplication = false
 useLegacyStacker = false
