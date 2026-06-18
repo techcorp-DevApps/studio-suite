@@ -116,8 +116,8 @@ export const themes: Record<ThemeName, Theme> = {
       inverse:   "#fdf8ee",
     },
     brand: {
-      gold:      palette.gold[300],   // brass
-      goldHover: palette.gold[200],
+      gold:      palette.gold[400],   // brass #a8884f  (alt: gold[300] champagne #c9a96e)
+      goldHover: palette.gold[300],
       goldMuted: "rgba(168,136,79,0.12)",
     },
     status: palette as any && {
