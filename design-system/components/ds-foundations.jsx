@@ -93,7 +93,7 @@ const SemanticTable = () => (
         ["border.strong",    "Paper 500", "Ink 600",  "Emphasized"],
         ["border.gold",      "Gold 400",  "Gold 400", "Accent border"],
         ["brand.gold",       "Gold 400",  "Gold 300", "Primary brand"],
-        ["brand.goldHover",  "Gold 200",  "Gold 100", "Hover state"],
+        ["brand.goldHover",  "Gold 300",  "Gold 100", "Hover state"],
         ["brand.goldMuted",  "rgba(168,136,79,0.12)", "rgba(201,169,110,0.15)", "Tinted bg"],
         ["scrim",            "rgba(14,23,48,0.55)",   "rgba(0,0,0,0.85)",       "Modal backdrop"],
       ].map(([t, l, d, role]) => (
