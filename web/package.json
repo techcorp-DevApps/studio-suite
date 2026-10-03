@@ -11,6 +11,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@fontsource/cinzel": "^5.2.8",
+    "@fontsource/cormorant-garamond": "^5.2.11",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@is/tokens": "workspace:*",
     "@radix-ui/react-slot": "^1.2.0",
     "class-variance-authority": "^0.7.1",

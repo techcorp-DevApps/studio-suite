@@ -1,0 +1,129 @@
+/* ===========================================================
+   LANDING — web-local bridge layer (task 01.0.1b)
+   Additive over @is/tokens. The design-system (design-system/components/landing.jsx
+   + styles/styles.css) is character-exact law; this file ports the in-scope
+   utility classes and self-hosts the fonts, deriving EVERY colour from the
+   @is/tokens namespaced vars. The design-system to @is/tokens colour map is in
+   .orchestrator/InstructionalPrompt_01.0.1b.md sec 3 (no DS ramps re-declared here).
+   =========================================================== */
+
+/* ----- Self-hosted fonts (no CDN; Vite bundles the woff2) ----- */
+@import "@fontsource/cinzel/400.css";
+@import "@fontsource/cormorant-garamond/400.css";
+@import "@fontsource/cormorant-garamond/400-italic.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+
+/* ----- Web-local design-system tokens (additive; not in @is/tokens) ----- */
+:root {
+  /* Type — design-system family stacks (styles.css Type block) */
+  --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+  --font-serif:   "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-body:    "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+  /* Non-colour tokens the ported classes / inline styles reference verbatim */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 180ms;
+  --dur-slow: 700ms;
+  --r-xs: 2px;
+}
+
+/* Logo lockup banner — theme-swapped (the banner PNG is the full
+   lens + "ILLUMINATE STUDIOS" wordmark). Dark-ink art on the light theme,
+   gold art on the dark theme — mirrors styles.css --logo-banner. */
+:root,
+[data-theme="light"] { --logo-banner: url("../assets/logo-banner-dark.png"); }
+[data-theme="dark"]   { --logo-banner: url("../assets/logo-banner-gold.png"); }
+
+/* ----- Type utilities (colours rewired to @is/tokens per prompt sec 3) ----- */
+.display {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+.serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+}
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--brand-gold);
+  font-weight: 500;
+}
+.label-sm {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+  font-weight: 500;
+}
+
+/* Champagne -> antique-gold gradient, anchored on the @is/tokens gold vars
+   (resolves per active theme via the mounted ThemeProvider). */
+.gold-text {
+  background-image: linear-gradient(180deg, var(--brand-gold-hover), var(--brand-gold), var(--border-gold));
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hairline divider (strong-border ink) */
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong) 20%, var(--border-strong) 80%, transparent);
+}
+
+/* ----- Buttons (in-scope set) ----- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 14px 28px;
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  border-radius: var(--r-xs);
+  transition: all var(--dur-fast) var(--ease-out);
+  white-space: nowrap; position: relative;
+}
+.btn-primary {
+  background: var(--brand-gold);
+  color: var(--ink-inverse); /* on-gold label: #fdf8ee light / #0a0a0a dark */
+}
+.btn-primary:hover {
+  background: var(--brand-gold-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(138,111,62,0.25);
+}
+[data-theme="dark"] .btn-primary:hover { box-shadow: 0 8px 24px rgba(201,169,110,0.25); }
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-primary);
+  border: 1px solid var(--border-strong);
+}
+.btn-ghost:hover {
+  border-color: var(--brand-gold);
+  color: var(--brand-gold);
+}
+.btn-sm { padding: 9px 18px; font-size: 11px; letter-spacing: 0.18em; }
+.btn-lg { padding: 18px 40px; font-size: 13px; }
+
+/* ----- Fade-in (namespaced keyframe to avoid colliding with Tailwind's) ----- */
+@keyframes landing-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: landing-fade-in var(--dur-slow) var(--ease-out); }
+
+/* ----- Logo banner treatment (styles.css .logo-banner-img, verbatim) ----- */
+.logo-banner-img {
+  height: 32px;
+  background-image: var(--logo-banner);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: left center;
+  aspect-ratio: 5.5 / 1;
+  display: block;
+}
