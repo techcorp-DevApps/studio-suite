@@ -1,0 +1,85 @@
+name: PR Preflight Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-preflight-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  repository-health:
+    name: Repository health and configuration
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate JSON files
+        run: |
+          set -euo pipefail
+          mapfile -t json_files < <(find . -path ./.git -prune -o -name '*.json' -type f -print | sort)
+          if [ "${#json_files[@]}" -eq 0 ]; then
+            echo "No JSON files found."
+            exit 0
+          fi
+          for file in "${json_files[@]}"; do
+            python -m json.tool "$file" >/dev/null
+          done
+
+      - name: Detect unresolved merge conflicts
+        run: |
+          set -euo pipefail
+          if git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- . ':!*.md'; then
+            echo "Unresolved merge conflict markers found."
+            exit 1
+          fi
+
+      - name: Check GitHub workflow syntax
+        run: |
+          set -euo pipefail
+          ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].sort.each { |path| YAML.load_file(path); puts "Validated #{path}" }'
+
+      - name: Check required Codex secret guidance
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "::warning title=OPENAI_API_KEY not configured::Codex PR review requires an OPENAI_API_KEY repository or organization secret."
+          fi
+
+      - name: Flag oversized tracked assets
+        run: |
+          set -euo pipefail
+          max_bytes=$((10 * 1024 * 1024))
+          git ls-files -z | while IFS= read -r -d '' file; do
+            [ -f "$file" ] || continue
+            size=$(wc -c < "$file")
+            if [ "$size" -gt "$max_bytes" ]; then
+              echo "::warning file=$file::Tracked file is larger than 10 MiB (${size} bytes). Consider Git LFS or asset optimization."
+            fi
+          done
+
+      - name: Scan changed text files for risky debug markers
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" |
+            while IFS= read -r file; do
+              [ -f "$file" ] || continue
+              if file "$file" | grep -q 'text'; then
+                git grep -n -E 'console\.log\(|debugger;|TODO\(release\)|FIXME\(release\)' -- "$file" || true
+              fi
+            done
