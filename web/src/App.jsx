@@ -1,14 +1,16 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Landing from "@/pages/Landing";
+import { Login, Portal } from "@/pages/Portal";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public, no-auth marketing entry point. Auth-gated studio and client
-            portals are added in later, separately-gated tasks. */}
         <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/studio" element={<Portal role="studio" />} />
+        <Route path="/client" element={<Portal role="client" />} />
       </Routes>
     </BrowserRouter>
   );

@@ -69,6 +69,9 @@ jobs:
       - name: Build tokens (@is/tokens — must precede the web build, which imports it)
         run: pnpm -F @is/tokens build
 
+      - name: Test generated token parity and contrast
+        run: pnpm -F @is/tokens test
+
       - name: Build web (vite)
         run: pnpm -F studio-suite-web build
 

@@ -1,84 +1,57 @@
-# studio-suite
+# Studio Suite
 
-Monorepo for the Studio Suite platform: a public, no-auth marketing front-end that
-is the entry point to an auth-gated studio admin portal and individual auth-gated
-client portals, backed by a FastAPI service and (in a later task) a high-resolution
-burst-access media pipeline (Cloudflare R2 + Worker/CDN).
+Studio Suite is a pnpm monorepo with a public React experience, protected studio/client portals, and a FastAPI/MongoDB service for tentative enquiries and authoritative booking status. Media delivery, payments, contracts, live mail and Luma provider integration remain later-phase work.
 
-This repository currently contains the **foundation skeleton** (task 01.0.0): it
-builds, runs, health-checks, and deploys. It is intentionally **not**
-feature-complete — auth logic, the R2 media pipeline, and product features land in
-later, separately-gated tasks.
+## Local setup
 
-## Layout
+Use the pinned package manager from the root; build tokens before the web app:
 
-```
-backend/     FastAPI + async MongoDB (Motor) service. Health probes, settings, tests.
-web/         Vite + React 19 + Tailwind + shadcn/ui. Public marketing landing (placeholder).
-mobile/      Reserved — Expo/EAS app scaffolded in task 01.1.0 (see mobile/README.md).
-.github/     CI: backend (ruff + pytest) and web (lint + build) jobs on PRs to main.
-test_reports/ Per-task completion reports with gate evidence.
+```bash
+corepack pnpm --version             # 10.34.3
+corepack pnpm install --frozen-lockfile
+corepack pnpm -F @is/tokens build
+corepack pnpm -F @is/tokens test
+corepack pnpm -F studio-suite-web dev
 ```
 
-Each deployable part (`backend/`, `web/`) carries its own `railway.toml` and its own
-`.env.example`. Real secrets live only in gitignored `.env` files — never in git.
-
-## Stack
-
-- **Backend:** Python 3.11, FastAPI, Uvicorn, Motor (async MongoDB driver),
-  pydantic-settings. Metadata-only persistence in MongoDB Atlas.
-- **Web:** Vite, React 19, Tailwind CSS (locally built), shadcn/ui, ESLint.
-- **Hosting:** Railway (one service per deployable directory).
-- **Storage (reserved):** Cloudflare R2 private buckets — settings fields are
-  reserved by name in this task; the adapter is implemented later.
-
-## Run the backend (local)
+In another shell:
 
 ```bash
 cd backend
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt          # prod + dev tooling
-cp .env.example .env                          # then fill in MONGODB_URI / MONGODB_DB_NAME
+python3.11 -m venv .venv && source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+cp .env.example .env
 uvicorn server:app --reload --port 8000
-# Liveness:  curl http://127.0.0.1:8000/api/health
-# DB probe:  curl http://127.0.0.1:8000/api/health/db
 ```
 
-Quality gates:
+Set `VITE_BACKEND_URL=http://localhost:8000` in `web/.env`. The SPA routes `/login`, `/studio`, and `/client` require a static host fallback to `index.html` (Railway's `serve -s` command provides it).
+
+## Configuration and security
+
+Backend variables are `MONGODB_URI`, `MONGODB_DB_NAME`, optional Mongo timeout/pool variables, `CORS_ORIGINS`, `CORS_ORIGIN_REGEX`, `ENVIRONMENT`, `BOOTSTRAP_TOKEN`, and `SESSION_TTL_MINUTES`. Reserved R2 names are listed in `backend/.env.example` but are not active. Never commit real values.
+
+Authentication uses scrypt password hashes and random, hashed, expiring and server-revocable bearer sessions. The browser keeps its session only in `sessionStorage`; roles and resource ownership are enforced by the API. Production should terminate TLS, restrict CORS, use a long bootstrap secret, remove/rotate that secret after provisioning, and apply distributed rate limiting at the trusted ingress when running more than one API process. No public self-registration exists.
+
+Create a controlled studio or client identity:
 
 ```bash
-cd backend
-ruff check .
-pytest -q
+curl -X POST http://localhost:8000/api/admin/bootstrap \
+  -H 'Content-Type: application/json' -H 'X-Bootstrap-Token: YOUR_LOCAL_SECRET' \
+  -d '{"email":"studio@example.com","password":"a-long-local-passphrase","role":"studio"}'
 ```
 
-The `GET /api/health/db` probe reports MongoDB connectivity as a status object and
-does **not** crash the service when the database is unreachable.
+A studio transition may link a client account by its server ID; submitted email never establishes ownership. Confirmation requires that linkage. MongoDB indexes enforce unique email, enquiry idempotency keys, session tokens, TTL expiry, and one confirmed booking per supported date/location slot. Application startup creates indexes after readiness succeeds. To roll back code, deploy the prior revision; the additive collections/indexes can remain. Do not drop indexes in production without a reviewed migration.
 
-## Run the web app (local)
+## Checks and probes
 
 ```bash
-cd web
-npm ci --include=dev        # Vite is a devDependency — dev deps are required to build
-cp .env.example .env        # then set VITE_BACKEND_URL
-npm run dev                 # http://localhost:5173
+corepack pnpm -F @is/tokens build && corepack pnpm -F @is/tokens test
+corepack pnpm -F studio-suite-web lint && corepack pnpm -F studio-suite-web build
+cd backend && . .venv/bin/activate && ruff check . && pytest -q
 ```
 
-Production build (what Railway runs):
-
-```bash
-cd web
-npm ci --include=dev && npm run build   # outputs to web/build/
-npx serve -s build                      # serve the production bundle locally
-npm run lint                            # ESLint
-```
+`GET /api/health` is liveness. `GET /api/health/db` is readiness and reports a sanitised connectivity state without stopping liveness. Tests use isolated Mongo emulation for behavior. Real Mongo index/concurrency verification requires a disposable `MONGODB_URI`; it is intentionally not claimed when unavailable.
 
 ## Deployment
 
-Railway hosts one service per deployable directory, each configured by its own
-`railway.toml` (`backend/railway.toml`, `web/railway.toml`). The web build command
-keeps dev dependencies (`npm ci --include=dev && npm run build`) because Vite is a
-devDependency; a bare production install fails with `vite: not found`.
-
-> `backend/railway.toml`, `web/railway.toml`, and `.github/workflows/ci.yml` are
-> **infrastructure** files — review them as infra, not as ordinary application code.
+`backend/railway.toml` and `web/railway.toml` define separate Railway services. Review these as infrastructure. This repository does not assert that a Railway dashboard or production environment has been changed.

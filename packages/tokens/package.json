@@ -18,7 +18,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup && node scripts/build-css.mjs"
+    "build": "tsup && node scripts/build-css.mjs",
+    "test": "node scripts/test-tokens.mjs"
   },
   "peerDependencies": {
     "react": ">=18"
