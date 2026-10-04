@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     cors_origins: str = ""
     cors_origin_regex: str | None = None
 
+    # ---- Authentication ----
+    session_ttl_minutes: int = 480
+    bootstrap_token: str | None = None
+
     # ---- Cloudflare R2 (RESERVED — adapter implemented in a later task) ----
     r2_account_id: str | None = None
     r2_access_key_id: str | None = None
@@ -57,11 +61,7 @@ class Settings(BaseSettings):
         Each origin is trimmed and has any trailing slash removed so browser
         ``Origin`` headers match exactly.
         """
-        return [
-            origin.strip().rstrip("/")
-            for origin in self.cors_origins.split(",")
-            if origin.strip()
-        ]
+        return [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

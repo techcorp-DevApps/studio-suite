@@ -41,8 +41,7 @@ def _mongo_uri() -> str:
     uri = (os.environ.get("MONGODB_URI") or "").strip()
     if not uri:
         raise RuntimeError(
-            "Required environment variable 'MONGODB_URI' is not set. "
-            "Configure it on the service (see README.md)."
+            "Required environment variable 'MONGODB_URI' is not set. Configure it on the service (see README.md)."
         )
     if not (uri.startswith("mongodb://") or uri.startswith("mongodb+srv://")):
         raise RuntimeError(
@@ -80,9 +79,7 @@ def _with_default_app_name(uri: str, app_name: str) -> str:
     if any(key.lower() == "appname" for key, _ in query):
         return uri
     query.append(("appName", app_name))
-    return urlunsplit(
-        (parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment)
-    )
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
 
 
 def _client_options() -> dict:
@@ -103,13 +100,27 @@ def get_database() -> AsyncIOMotorDatabase:
     global _client, _db
     if _db is None:
         uri = _mongo_uri()
-        app_name = (os.environ.get("MONGODB_APP_NAME", "").strip() or DEFAULT_APP_NAME)
+        app_name = os.environ.get("MONGODB_APP_NAME", "").strip() or DEFAULT_APP_NAME
         _client = AsyncIOMotorClient(
             _with_default_app_name(uri, app_name),
             **_client_options(),
         )
         _db = _client[_database_name(uri)]
     return _db
+
+
+async def ensure_indexes(database: AsyncIOMotorDatabase | None = None) -> None:
+    """Create idempotency, session, identity, and confirmed-slot guarantees."""
+    database = database or get_database()
+    await database.enquiries.create_index("idempotency_key", unique=True)
+    await database.users.create_index("email", unique=True)
+    await database.sessions.create_index("token_hash", unique=True)
+    await database.sessions.create_index("expires_at", expireAfterSeconds=0)
+    await database.bookings.create_index(
+        "confirmed_slot",
+        unique=True,
+        partialFilterExpression={"confirmed_slot": {"$type": "string"}},
+    )
 
 
 async def check_database_connection() -> dict:
@@ -122,9 +133,13 @@ async def check_database_connection() -> dict:
     try:
         database = get_database()
         await database.client.admin.command("ping")
-    except Exception as exc:
-        # A health probe must report problems, never crash the service.
-        return {"ok": False, "status": "unreachable", "error": str(exc)}
+    except Exception:
+        # Do not reflect driver messages: they can contain topology or credential details.
+        return {
+            "ok": False,
+            "status": "unreachable",
+            "error": "Database readiness check failed. Review server logs.",
+        }
 
     options = _client_options()
     return {

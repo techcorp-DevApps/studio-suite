@@ -1,224 +1,41 @@
-import { ArrowRight } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import "@/styles/landing.css";
 
-// Pixel-faithful public landing — IN-SCOPE sections only (task 01.0.1b):
-// Topnav -> HeroSection -> PortfolioStrip, then STOP. Faithful to
-// design-system/components/landing.jsx; colours bridged onto @is/tokens
-// via web/src/styles/landing.css. Experience/Packages/Testimonial/Book/
-// Footer/BookingModal are deferred, separately-gated tasks.
+const API = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const initial = { name: "", email: "", phone: "", preferred_date: "", session_type: "wedding", package_preference: "undecided", location: "", message: "" };
 
-const landingStyles = {
-  hero: {
-    minHeight: "100vh",
-    background: "var(--surface-canvas)",
-    color: "var(--ink-primary)", // design-system body ink, for inherited text
-    position: "relative",
-    overflow: "hidden",
-  },
-  heroInner: {
-    position: "relative",
-    paddingTop: "120px",
-    paddingBottom: "80px",
-  },
-  topnav: {
-    position: "absolute", top: 0, left: 0, right: 0,
-    padding: "28px 48px",
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    zIndex: 10,
-  },
-  navLinks: {
-    display: "flex", gap: 40,
-    fontFamily: "var(--font-body)",
-    fontSize: 11, letterSpacing: "0.28em",
-    textTransform: "uppercase", color: "var(--ink-secondary)",
-  },
-};
-
-// Category links are inert placeholders (non-navigating) — their real
-// destinations arrive in later, separately-gated tasks.
-const NAV_LINKS = ["Portfolio", "Experience", "Investment", "Journal"];
-
-const PORTFOLIO_PHOTOS = [
-  "1519741497674-611481863552",
-  "1465495976277-4387d4b0b4c6",
-  "1583939003579-730e3918a45a",
-  "1606216794074-735e91aa2c92",
-  "1525772764200-be829a350797",
-  "1606800052052-a08af7148866",
-];
-
-// ============================================================
-// TOPNAV (ThemeToggle omitted — no live setter this task)
-// ============================================================
-const Topnav = () => (
-  <div style={landingStyles.topnav}>
-    <div className="logo-banner-img" role="img" aria-label="Illuminate Studios" />
-    <div style={landingStyles.navLinks}>
-      {NAV_LINKS.map((label) => (
-        <a
-          key={label}
-          style={{ cursor: "pointer", transition: "color 200ms" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--brand-gold-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ink-secondary)"; }}
-        >
-          {label}
-        </a>
-      ))}
-    </div>
-    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-      <button className="btn btn-ghost btn-sm" type="button">Client Portal</button>
-      <button className="btn btn-primary btn-sm" type="button">Reserve a Date</button>
-    </div>
-  </div>
-);
-
-// ============================================================
-// HERO
-// ============================================================
-const HeroSection = () => (
-  <section style={{
-    padding: "80px 48px 120px",
-    display: "grid",
-    gridTemplateColumns: "1.1fr 1fr",
-    gap: 80,
-    alignItems: "center",
-    maxWidth: 1440, margin: "0 auto",
-  }}>
-    <div className="fade-in">
-      <div className="eyebrow" style={{ marginBottom: 32 }}>
-        ◆ Est. Melbourne · 2014
-      </div>
-      <h1 style={{
-        fontFamily: "var(--font-display)",
-        fontSize: "clamp(48px, 6vw, 88px)",
-        lineHeight: 0.95,
-        letterSpacing: "0.04em",
-        margin: 0,
-        textTransform: "uppercase",
-        fontWeight: 400,
-      }}>
-        Weddings,<br/>
-        Editorials,<br/>
-        <span className="serif-italic gold-text" style={{
-          fontFamily: "var(--font-serif)",
-          textTransform: "none",
-          fontWeight: 400,
-          fontStyle: "italic",
-          letterSpacing: "0",
-        }}>quietly extraordinary.</span>
-      </h1>
-      <div style={{ marginTop: 40, maxWidth: 460,
-                    fontFamily: "var(--font-serif)", fontSize: 19,
-                    lineHeight: 1.5, color: "var(--ink-secondary)" }}>
-        A boutique studio for couples and brands who prefer their stories told in light,
-        not in noise. Limited dates each season, hand-printed archives, fine-art delivery.
-      </div>
-      <div style={{ marginTop: 48, display: "flex", gap: 16 }}>
-        <button className="btn btn-primary btn-lg" type="button">
-          Begin <ArrowRight size={14} strokeWidth={1.25} />
-        </button>
-        <button className="btn btn-ghost btn-lg" type="button">View Portfolio</button>
-      </div>
-
-      <div style={{ marginTop: 80, display: "flex", gap: 48, color: "var(--ink-tertiary)" }}>
-        <Metric n="280+" label="Weddings honoured" />
-        <Metric n="12yr" label="Behind the lens" />
-        <Metric n="40" label="Editorial features" />
-      </div>
-    </div>
-
-    {/* Visual collage — Unsplash placeholders verbatim (real media is a later task) */}
-    <div style={{ position: "relative", height: 640 }}>
-      <div style={{
-        position: "absolute", top: 0, right: 0, width: "62%", height: "70%",
-        backgroundImage: "url(https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80)",
-        backgroundSize: "cover", backgroundPosition: "center",
-        boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
-      }} />
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, width: "55%", height: "55%",
-        backgroundImage: "url(https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800&q=80)",
-        backgroundSize: "cover", backgroundPosition: "center",
-        boxShadow: "0 40px 80px rgba(0,0,0,0.7)",
-        border: "1px solid rgba(201,169,110,0.2)",
-      }} />
-      <div style={{
-        position: "absolute", top: "35%", left: "35%", width: 96, height: 96,
-        background: "var(--surface-canvas)", border: "1px solid var(--border-gold)",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        gap: 6, zIndex: 2,
-      }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 11,
-                      letterSpacing: "0.2em", color: "var(--brand-gold-hover)" }}>SINCE</div>
-        <div className="gold-text" style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: "0.1em" }}>MMXIV</div>
-      </div>
-    </div>
-  </section>
-);
-
-const Metric = ({ n, label }) => (
-  <div>
-    <div className="gold-text" style={{ fontFamily: "var(--font-display)", fontSize: 28, letterSpacing: "0.05em" }}>{n}</div>
-    <div className="label-sm" style={{ marginTop: 4 }}>{label}</div>
-  </div>
-);
-
-// ============================================================
-// PORTFOLIO STRIP
-// ============================================================
-const PortfolioStrip = () => (
-  <section style={{ padding: "100px 0", borderTop: "1px solid var(--border-default)", borderBottom: "1px solid var(--border-default)" }}>
-    <div style={{ padding: "0 48px", marginBottom: 40 }}>
-      <div className="hairline" />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 32 }}>
-        <div>
-          <div className="eyebrow">— Recent Work</div>
-          <h2 className="display" style={{ fontSize: 40, margin: "12px 0 0" }}>Selected Frames</h2>
-        </div>
-        <button className="btn btn-ghost btn-sm" type="button">All Portfolio <ArrowRight size={12} strokeWidth={1.25} /></button>
-      </div>
-    </div>
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(6, 1fr)",
-      gap: 2,
-    }}>
-      {PORTFOLIO_PHOTOS.map((p, i) => (
-        <div key={p} style={{
-          aspectRatio: i % 3 === 1 ? "3/5" : "4/5",
-          backgroundImage: `url(https://images.unsplash.com/photo-${p}?w=600&q=80)`,
-          backgroundSize: "cover", backgroundPosition: "center",
-          cursor: "pointer", transition: "all 600ms var(--ease-out)",
-          filter: "grayscale(0.15)",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.filter = "grayscale(0)"; e.currentTarget.style.transform = "scale(1.02)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.filter = "grayscale(0.15)"; e.currentTarget.style.transform = "scale(1)"; }} />
-      ))}
-    </div>
-  </section>
-);
-
-// ============================================================
-// LANDING — public, no-auth marketing entry point
-// ============================================================
 export default function Landing() {
-  return (
-    <div style={landingStyles.hero}>
-      {/* Atmospheric backdrop */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: `
-          radial-gradient(50% 40% at 70% 30%, rgba(201,169,110,0.10), transparent 60%),
-          radial-gradient(40% 30% at 20% 80%, rgba(201,169,110,0.05), transparent 60%)`,
-      }} />
-
-      <Topnav />
-
-      <div style={landingStyles.heroInner}>
-        <HeroSection />
-        <PortfolioStrip />
-      </div>
-    </div>
-  );
+  const [form, setForm] = useState(initial);
+  const [status, setStatus] = useState({ kind: "idle", message: "" });
+  const key = useRef(crypto.randomUUID());
+  const update = (event) => setForm({ ...form, [event.target.name]: event.target.value });
+  const submit = async (event) => {
+    event.preventDefault();
+    setStatus({ kind: "pending", message: "Sending your request…" });
+    try {
+      const response = await fetch(`${API}/api/enquiries`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": key.current }, body: JSON.stringify(form) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(response.status === 422 ? "Please review each field and try again." : data.detail || "The studio service is unavailable.");
+      setStatus({ kind: "success", message: data.enquiry.status_message });
+    } catch (error) {
+      setStatus({ kind: "error", message: error.message || "The studio service is unavailable. Your request was not recorded; please retry." });
+    }
+  };
+  return <>
+    <header className="site-header"><a className="brand" href="#top">Illuminate Studios</a><nav aria-label="Primary"><a href="#portfolio">Portfolio</a><a href="#experience">Experience</a><a href="#packages">Packages</a><a href="#enquire">Enquire</a></nav><Link className="button secondary" to="/login">Portal</Link></header>
+    <main id="top">
+      <section className="hero"><div><p className="eyebrow">Melbourne photography studio</p><h1>Stories held<br/><em>in honest light.</em></h1><p className="lede">Considered photography for weddings, portraits, editorials and brands, centred on natural expression and thoughtful direction.</p><div className="actions"><a className="button" href="#enquire">Begin an enquiry <ArrowRight aria-hidden="true"/></a><a className="text-link" href="#portfolio">View selected work</a></div></div><div className="hero-art" aria-hidden="true"><span>Light</span><span>Place</span><span>Presence</span></div></section>
+      <section id="portfolio" className="section dark"><p className="eyebrow">Selected work</p><h2>Unscripted, observed, enduring.</h2><div className="frames" aria-label="Portfolio availability"><article><span>Weddings</span><p>Selected client work will be published only with appropriate permission.</p></article><article><span>Portraits</span><p>Private work remains private; approved portfolio material is being prepared.</p></article><article><span>Editorial & brand</span><p>Request a relevant private review when you begin an enquiry.</p></article></div></section>
+      <section id="experience" className="section split"><div><p className="eyebrow">The experience</p><h2>A calm, clear process.</h2></div><ol className="steps"><li><b>01 · Tell us what matters</b><span>Share the people, place and preferred date. A preference is not an availability hold.</span></li><li><b>02 · Studio review</b><span>The studio reviews the details and responds with the appropriate next step.</span></li><li><b>03 · Photograph with ease</b><span>Considered preparation and gentle direction leave room for moments to unfold naturally.</span></li><li><b>04 · Receive your selection</b><span>Your selected photographs are presented with care and discretion.</span></li></ol></section>
+      <section id="packages" className="section"><p className="eyebrow">Ways to work together</p><h2>Start with the shape of your story.</h2><div className="cards">{[["Essential","Focused coverage for a smaller gathering or portrait session."],["Signature","Extended coverage for a fuller wedding or editorial story."],["Bespoke","A tailored scope for brands, multi-part celebrations or particular requirements."]].map(([title, copy])=><article key={title}><h3>{title}</h3><p>{copy}</p><a href="#enquire">Enquire about {title}</a></article>)}</div><p className="note">Scope and availability are confirmed by the studio after review. No date is held by submitting this form.</p></section>
+      <section className="section quote" aria-labelledby="client-words"><p className="eyebrow">Client words</p><h2 id="client-words">Testimonials will appear here only with client approval.</h2><p>We do not publish placeholder endorsements or unverified claims.</p></section>
+      <section id="enquire" className="section enquiry"><div><p className="eyebrow">Begin an enquiry</p><h2>Share what you are planning.</h2><p>This sends a tentative request for studio review. It does not reserve, hold or confirm a date.</p></div><form onSubmit={submit} aria-describedby="form-note form-status"><div className="field-grid"><Field label="Name" name="name" value={form.name} onChange={update}/><Field label="Email" name="email" type="email" value={form.email} onChange={update}/><Field label="Phone" name="phone" type="tel" value={form.phone} onChange={update}/><Field label="Preferred date" name="preferred_date" type="date" value={form.preferred_date} onChange={update}/><Select label="Session type" name="session_type" value={form.session_type} onChange={update} options={["wedding","portrait","editorial","brand","other"]}/><Select label="Package preference" name="package_preference" value={form.package_preference} onChange={update} options={["undecided","essential","signature","bespoke"]}/></div><Field label="Location" name="location" value={form.location} onChange={update}/><label>Tell us about your plans<textarea required minLength="10" maxLength="2000" name="message" value={form.message} onChange={update}/></label><p id="form-note" className="note">Required fields are checked by the studio service before your request is stored.</p><button className="button" disabled={status.kind === "pending"}>{status.kind === "pending" ? "Sending…" : "Send tentative request"}</button><p id="form-status" className={`status ${status.kind}`} role="status">{status.kind === "success" && <CheckCircle2 aria-hidden="true"/>}{status.message}</p></form></section>
+    </main><footer><a className="brand" href="#top">Illuminate Studios</a><p>Melbourne, Australia · Enquiries are reviewed by the studio.</p><Link to="/login">Studio & client sign in</Link></footer>
+  </>;
 }
+
+function Field({ label, ...props }) { return <label>{label}<input required {...props}/></label>; }
+function Select({ label, options, ...props }) { return <label>{label}<select {...props}>{options.map(option=><option key={option} value={option}>{option[0].toUpperCase()+option.slice(1)}</option>)}</select></label>; }
